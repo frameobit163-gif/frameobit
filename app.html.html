@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frameobit – Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --bg:#0d0817; --panel:#171027; --line:#2c2146; --text:#f3efff; --muted:#9a8fb8;
+  --neon:#39ff88; --purple:#8b5cf6; --warn:#ffb84d; --bad:#ff5d7a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;line-height:1.5}
+.logo{font-family:Bungee,sans-serif;font-size:26px;letter-spacing:1px}
+.logo b{color:var(--neon);font-weight:400}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--neon);outline-offset:2px}
+.hidden{display:none!important}
+
+/* buttons */
+.btn{background:var(--neon);color:#07130c;border:0;border-radius:12px;padding:12px 20px;font-weight:700;cursor:pointer;box-shadow:0 5px 0 #1b9a50;transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #1b9a50}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:0 5px 0 #1b9a50}
+.btn.ghost{background:transparent;color:var(--text);border:2px solid var(--line);box-shadow:none}
+.btn.ghost:active{transform:none}
+.btn.purple{background:var(--purple);color:#fff;box-shadow:0 5px 0 #5230b8}
+
+/* auth */
+#auth{min-height:100vh;display:grid;place-items:center;padding:24px}
+.auth-card{width:100%;max-width:420px;background:var(--panel);border:2px solid var(--line);border-radius:20px;padding:28px}
+.auth-card .logo{text-align:center;margin-bottom:6px}
+.auth-card p.sub{text-align:center;color:var(--muted);margin-bottom:20px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:12px;padding:4px;margin-bottom:18px}
+.seg button{background:none;border:0;padding:10px;border-radius:9px;font-weight:700;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--purple);color:#fff}
+label{display:block;font-size:14px;color:var(--muted);margin:12px 0 6px}
+input[type=email],input[type=password],input[type=url],input[type=text]{width:100%;background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:12px 14px}
+input:focus{border-color:var(--purple);outline:none}
+.msg{min-height:22px;margin:12px 0 4px;font-size:14px}
+.msg.err{color:var(--bad)} .msg.ok{color:var(--neon)}
+.auth-card .btn{width:100%}
+.fine{font-size:12px;color:var(--muted);text-align:center;margin-top:14px}
+
+/* app shell */
+header{position:sticky;top:0;z-index:5;background:rgba(13,8,23,.92);backdrop-filter:blur(8px);border-bottom:2px solid var(--line)}
+.bar{max-width:1000px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.bar .grow{flex:1}
+.chip{background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:6px 14px;font-weight:700}
+.chip span{color:var(--neon)}
+nav.tabs{max-width:1000px;margin:0 auto;padding:0 20px;display:flex;gap:6px}
+nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;color:var(--muted);font-weight:700;cursor:pointer}
+nav.tabs button.on{color:var(--text);border-color:var(--neon)}
+main{max-width:1000px;margin:0 auto;padding:28px 20px 80px}
+h1{font-family:Bungee,sans-serif;font-weight:400;font-size:clamp(26px,5vw,38px);margin-bottom:6px}
+h2{font-size:18px;margin:30px 0 12px}
+.lead{color:var(--muted);margin-bottom:20px}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:20px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row input{flex:1;min-width:220px}
+
+/* projects */
+.list{display:grid;gap:10px}
+.item{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap}
+.item .t{overflow-wrap:anywhere;min-width:0;flex:1}
+.item .d{color:var(--muted);font-size:13px}
+.badge{border-radius:999px;padding:4px 12px;font-size:13px;font-weight:700;background:#2a1f45;color:var(--warn)}
+.empty{border:2px dashed var(--line);border-radius:14px;padding:26px;text-align:center;color:var(--muted)}
+
+/* billing */
+.credits-big{font-family:Bungee,sans-serif;font-size:56px;color:var(--neon);line-height:1}
+.toggle{display:inline-flex;background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:4px;margin-bottom:16px}
+.toggle button{background:none;border:0;border-radius:999px;padding:8px 16px;font-weight:700;color:var(--muted);cursor:pointer}
+.toggle button.on{background:var(--purple);color:#fff}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.plan{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:6px}
+.plan.pop{border-color:var(--neon)}
+.plan h3{font-family:Bungee,sans-serif;font-weight:400;font-size:20px}
+.plan .price{font-size:28px;font-weight:700}
+.plan .price small{font-size:13px;color:var(--muted);font-weight:400}
+.plan ul{list-style:none;color:var(--muted);font-size:14px;margin:6px 0 12px;flex:1}
+.plan li::before{content:"+ ";color:var(--neon);font-weight:700}
+.ledger .plus{color:var(--neon);font-weight:700} .ledger .minus{color:var(--bad);font-weight:700}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--purple);color:#fff;padding:12px 18px;border-radius:12px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN / SIGNUP -->
+<section id="auth">
+  <div class="auth-card">
+    <div class="logo">FRAME<b>OBIT</b></div>
+    <p class="sub">Turn long videos into clips people finish watching.</p>
+    <div class="seg" role="tablist">
+      <button id="tabLogin" class="on" type="button">Log in</button>
+      <button id="tabSignup" type="button">Sign up</button>
+    </div>
+    <form id="authForm" novalidate>
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" placeholder="you@gmail.com" required>
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="At least 6 characters" required>
+      <div id="authMsg" class="msg" role="status" aria-live="polite"></div>
+      <button id="authBtn" class="btn" type="submit">Log in</button>
+    </form>
+    <p class="fine" id="authFine">New accounts get 15 free credits.</p>
+  </div>
+</section>
+
+<!-- APP -->
+<section id="app" class="hidden">
+  <header>
+    <div class="bar">
+      <div class="logo">FRAME<b>OBIT</b></div>
+      <div class="grow"></div>
+      <div class="chip">⚡ <span id="creditChip">0</span> credits</div>
+      <button id="logout" class="btn ghost" type="button">Log out</button>
+    </div>
+    <nav class="tabs">
+      <button id="navDash" class="on" type="button">Dashboard</button>
+      <button id="navBill" type="button">Billing</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Dashboard -->
+    <div id="viewDash">
+      <h1>Your projects</h1>
+      <p class="lead">Paste a video link. Each video costs 3 credits.</p>
+      <div class="panel">
+        <div class="row">
+          <input id="videoUrl" type="url" placeholder="https://youtube.com/watch?v=..." aria-label="Video link">
+          <button id="createBtn" class="btn" type="button">Create clips</button>
+        </div>
+        <div id="createMsg" class="msg" role="status" aria-live="polite"></div>
+      </div>
+      <h2>Recent videos</h2>
+      <div id="projects" class="list"></div>
+    </div>
+
+    <!-- Billing -->
+    <div id="viewBill" class="hidden">
+      <h1>Billing</h1>
+      <p class="lead">Your balance and plans.</p>
+      <div class="panel">
+        <div class="credits-big" id="creditBig">0</div>
+        <p class="lead" style="margin:6px 0 0">credits left · plan: <b id="planName">free</b></p>
+      </div>
+
+      <h2>Plans</h2>
+      <div class="toggle" role="group" aria-label="Billing period">
+        <button id="pMonthly" class="on" type="button">Monthly</button>
+        <button id="pYearly" type="button">Yearly · 2 months free</button>
+      </div>
+      <div class="plans" id="plans"></div>
+      <p class="fine" style="text-align:left;margin-top:12px">Payments go live after our Razorpay account is approved.</p>
+
+      <h2>Credit history</h2>
+      <div id="ledger" class="list ledger"></div>
+    </div>
+  </main>
+</section>
+
+<div id="toast" role="status"></div>
+
+<script>
+/* ====== CONFIG: put your own values here ====== */
+const SUPABASE_URL = "https://qlgwrkhgyzfopambameu.supabase.co";
+const SUPABASE_KEY = "sb_publishable_befi88FiXpQTOK5O_QckEw_6OvCRlBT";
+/* publishable key is safe in the browser. NEVER put the secret key here. */
+const COST_PER_VIDEO = 3;
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = (id) => document.getElementById(id);
+let mode = "login";
+let yearly = false;
+let user = null;
+
+function el(tag, cls, text){
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+function toast(t){
+  const x = $("toast"); x.textContent = t; x.classList.add("show");
+  clearTimeout(toast.t); toast.t = setTimeout(() => x.classList.remove("show"), 2600);
+}
+function niceError(e){
+  const m = (e && e.message || "").toLowerCase();
+  if (m.includes("invalid login")) return "Wrong email or password.";
+  if (m.includes("already registered")) return "This email already has an account. Log in instead.";
+  if (m.includes("password") && m.includes("6")) return "Password needs at least 6 characters.";
+  if (m.includes("rate limit")) return "Too many tries. Wait a few minutes and try again.";
+  if (m.includes("not enough credits")) return "Not enough credits. Open Billing to add more.";
+  if (m.includes("invalid link")) return "Paste a valid video link.";
+  if (m.includes("failed to fetch")) return "Can’t reach the server. Check your internet and the Supabase URL.";
+  return (e && e.message) ? e.message : "Something went wrong. Try again.";
+}
+
+/* ---------- auth UI ---------- */
+function setMode(m){
+  mode = m;
+  $("tabLogin").classList.toggle("on", m === "login");
+  $("tabSignup").classList.toggle("on", m === "signup");
+  $("authBtn").textContent = m === "login" ? "Log in" : "Create account";
+  $("password").autocomplete = m === "login" ? "current-password" : "new-password";
+  $("authFine").textContent = m === "login" ? "New accounts get 15 free credits." : "By signing up you agree to our Terms and Privacy Policy.";
+  $("authMsg").textContent = "";
+}
+$("tabLogin").onclick = () => setMode("login");
+$("tabSignup").onclick = () => setMode("signup");
+
+$("authForm").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  const msg = $("authMsg");
+  msg.className = "msg";
+  if (!/^\S+@\S+\.\S+$/.test(email)) { msg.className = "msg err"; msg.textContent = "Enter a valid email."; return; }
+  if (password.length < 6) { msg.className = "msg err"; msg.textContent = "Password needs at least 6 characters."; return; }
+  $("authBtn").disabled = true;
+  try{
+    if (mode === "signup"){
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      if (!data.session){
+        msg.className = "msg ok";
+        msg.textContent = "Account created. Check your email to confirm, then log in.";
+      }
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    }
+  } catch(e){
+    msg.className = "msg err"; msg.textContent = niceError(e);
+  } finally {
+    $("authBtn").disabled = false;
+  }
+});
+
+$("logout").onclick = async () => { await sb.auth.signOut(); };
+
+/* ---------- tabs ---------- */
+function showTab(name){
+  $("viewDash").classList.toggle("hidden", name !== "dash");
+  $("viewBill").classList.toggle("hidden", name !== "bill");
+  $("navDash").classList.toggle("on", name === "dash");
+  $("navBill").classList.toggle("on", name === "bill");
+  if (name === "bill") loadLedger();
+}
+$("navDash").onclick = () => showTab("dash");
+$("navBill").onclick = () => showTab("bill");
+
+/* ---------- data ---------- */
+async function loadProfile(retry = true){
+  const { data, error } = await sb.from("profiles").select("credits,plan").eq("id", user.id).maybeSingle();
+  if (error) { toast(niceError(error)); return; }
+  if (!data && retry){ setTimeout(() => loadProfile(false), 900); return; }
+  const c = data ? data.credits : 0;
+  $("creditChip").textContent = c;
+  $("creditBig").textContent = c;
+  $("planName").textContent = data ? data.plan : "free";
+}
+function fmt(d){ return new Date(d).toLocaleString([], { dateStyle:"medium", timeStyle:"short" }); }
+
+async function loadProjects(){
+  const box = $("projects"); box.replaceChildren();
+  const { data, error } = await sb.from("projects").select("id,video_url,status,created_at").order("created_at", { ascending:false }).limit(30);
+  if (error) { box.append(el("div","empty",niceError(error))); return; }
+  if (!data.length){ box.append(el("div","empty","No videos yet. Paste a link above and press Create clips.")); return; }
+  data.forEach(p => {
+    const it = el("div","item");
+    const left = el("div","t");
+    left.append(el("div","",p.video_url), el("div","d",fmt(p.created_at)));
+    const label = p.status === "queued" ? "Queued" : p.status === "ready" ? "Ready" : "Processing";
+    it.append(left, el("span","badge",label));
+    box.append(it);
+  });
+}
+async function loadLedger(){
+  const box = $("ledger"); box.replaceChildren();
+  const { data, error } = await sb.from("credit_ledger").select("change,reason,created_at").order("created_at", { ascending:false }).limit(30);
+  if (error) { box.append(el("div","empty",niceError(error))); return; }
+  if (!data.length){ box.append(el("div","empty","No credit activity yet.")); return; }
+  data.forEach(r => {
+    const it = el("div","item");
+    const left = el("div","t");
+    left.append(el("div","",r.reason || "Credit change"), el("div","d",fmt(r.created_at)));
+    it.append(left, el("span", r.change > 0 ? "plus" : "minus", (r.change > 0 ? "+" : "") + r.change));
+    box.append(it);
+  });
+}
+
+/* ---------- create project (server checks credits) ---------- */
+$("createBtn").onclick = async () => {
+  const url = $("videoUrl").value.trim();
+  const msg = $("createMsg");
+  msg.className = "msg";
+  if (!/^https?:\/\/\S+\.\S+/.test(url)){ msg.className = "msg err"; msg.textContent = "Paste a full link that starts with https://"; return; }
+  $("createBtn").disabled = true;
+  try{
+    const { error } = await sb.rpc("create_project", { p_url: url });
+    if (error) throw error;
+    $("videoUrl").value = "";
+    msg.className = "msg ok";
+    msg.textContent = COST_PER_VIDEO + " credits used. Your video is in the queue.";
+    await Promise.all([loadProfile(), loadProjects()]);
+  } catch(e){
+    msg.className = "msg err"; msg.textContent = niceError(e);
+  } finally {
+    $("createBtn").disabled = false;
+  }
+};
+
+/* ---------- plans ---------- */
+const PLANS = [
+  { name:"Free",    m:0,    y:0,     credits:"15 credits once", feats:["Watermark","720p","1 hook style"] },
+  { name:"Starter", m:499,  y:4990,  credits:"150 credits / month", feats:["No watermark","1080p","All caption styles"] },
+  { name:"Pro",     m:1299, y:12990, credits:"500 credits / month", feats:["Your own logo","Priority rendering","Hook generator"], pop:true },
+  { name:"Studio",  m:3499, y:34990, credits:"1,500 credits / month", feats:["Team use","Human review","Fast support"] }
+];
+function renderPlans(){
+  const box = $("plans"); box.replaceChildren();
+  PLANS.forEach(p => {
+    const c = el("div","plan" + (p.pop ? " pop" : ""));
+    c.append(el("h3","",p.name));
+    const price = el("div","price", p.m === 0 ? "₹0" : "₹" + (yearly ? p.y : p.m).toLocaleString("en-IN"));
+    if (p.m) price.append(el("small","", yearly ? " / year" : " / month"));
+    c.append(price, el("div","d",p.credits));
+    const ul = el("ul"); p.feats.forEach(f => ul.append(el("li","",f))); c.append(ul);
+    const b = el("button","btn " + (p.pop ? "" : "purple"), p.m === 0 ? "Current plan" : "Coming soon");
+    b.disabled = true; c.append(b);
+    box.append(c);
+  });
+}
+$("pMonthly").onclick = () => { yearly = false; $("pMonthly").classList.add("on"); $("pYearly").classList.remove("on"); renderPlans(); };
+$("pYearly").onclick  = () => { yearly = true;  $("pYearly").classList.add("on"); $("pMonthly").classList.remove("on"); renderPlans(); };
+renderPlans();
+
+/* ---------- session ---------- */
+async function onSession(session){
+  user = session ? session.user : null;
+  $("auth").classList.toggle("hidden", !!user);
+  $("app").classList.toggle("hidden", !user);
+  if (user){
+    showTab("dash");
+    await Promise.all([loadProfile(), loadProjects()]);
+  } else {
+    $("password").value = "";
+  }
+}
+sb.auth.getSession().then(({ data }) => onSession(data.session));
+sb.auth.onAuthStateChange((_evt, session) => {
+  const same = session && user && session.user.id === user.id;
+  if (!same) onSession(session);
+});
+</script>
+</body>
+</html>
